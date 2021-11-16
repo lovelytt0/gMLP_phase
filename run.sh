@@ -23,3 +23,6 @@ conda install -c smousavi05 eqtransformer
 #conda install tensorflow-gpu==2.2.0 
 ipython kernel install --user --name=eqtransformer
 conda deactivate
+
+# Install pyg
+conda install pyg -c pyg -c conda-forge
