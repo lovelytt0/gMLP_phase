@@ -26,3 +26,10 @@ conda deactivate
 
 # Install pyg
 conda install pyg -c pyg -c conda-forge
+
+pip install torch-scatter
+pip install torch-sparse
+pip install torch-geometric
+
+pip install torch-cluster
+pip install torch-spline-conv
