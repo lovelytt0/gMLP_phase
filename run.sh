@@ -18,6 +18,7 @@ python setup.py install
 conda create -n eqt python=3.7
 conda activate eqt
 conda install -c smousavi05 eqtransformer
+pip install torch, einops, pytorch_lightning, h5py, matplotlib, obspy, pandas, tensorflow
 #conda install tensorflow-gpu==2.2.0 
 ipython kernel install --user --name=eqt
 conda deactivate
