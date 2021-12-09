@@ -28,6 +28,8 @@ conda deactivate
 # echo "install pyg env"
 # conda create -n pyg python=3.7
 # conda install pyg -c pyg -c conda-forge
+#pip install torch einops pytorch_lightning h5py matplotlib obspy pandas tensorflow
+
 # ipython kernel install --user --name=pyg
 # conda deactivate
 
@@ -37,3 +39,6 @@ conda deactivate
 
 # pip install torch-cluster
 # pip install torch-spline-conv
+
+# Add project path
+#export PYTHONPATH=$PYTHONPATH:/path/you/want/to/add
