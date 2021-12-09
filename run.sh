@@ -24,11 +24,11 @@ conda deactivate
 
 # Install pyg
 
-echo "install pyg env"
-conda create -n pyg python=3.7
-conda install pyg -c pyg -c conda-forge
-ipython kernel install --user --name=pyg
-conda deactivate
+# echo "install pyg env"
+# conda create -n pyg python=3.7
+# conda install pyg -c pyg -c conda-forge
+# ipython kernel install --user --name=pyg
+# conda deactivate
 
 # pip install torch-scatter
 # pip install torch-sparse
