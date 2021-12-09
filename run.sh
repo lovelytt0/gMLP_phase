@@ -3,7 +3,7 @@
 git clone --recurse-submodules   https://github.com/wayneweiqiang/PhaseNet
 cd PhaseNet
 echo "install phasenet env"
-conda env update -f=env.yml -n base
+# conda env update -f=env.yml -n base
 conda env create -f env.yml -n phasenet
 conda activate phasenet
 ipython kernel install --user --name=phasenet
