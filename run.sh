@@ -15,8 +15,6 @@ git clone --recurse-submodules git://github.com/smousavi05/EQTransformer
 cd EQTransformer
 echo "install EQTransformer env"
 python setup.py install
-
-
 conda create -n eqt python=3.7
 conda activate eqt
 conda install -c smousavi05 eqtransformer
@@ -26,6 +24,7 @@ conda deactivate
 
 # Install pyg
 
+echo "install pyg env"
 conda create -n pyg python=3.7
 conda install pyg -c pyg -c conda-forge
 ipython kernel install --user --name=pyg
