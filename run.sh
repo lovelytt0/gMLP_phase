@@ -21,15 +21,19 @@ conda create -n eqt python=3.7
 conda activate eqt
 conda install -c smousavi05 eqtransformer
 #conda install tensorflow-gpu==2.2.0 
-ipython kernel install --user --name=eqtransformer
+ipython kernel install --user --name=eqt
 conda deactivate
 
 # Install pyg
+
+conda create -n pyg python=3.7
 conda install pyg -c pyg -c conda-forge
+ipython kernel install --user --name=pyg
+conda deactivate
 
-pip install torch-scatter
-pip install torch-sparse
-pip install torch-geometric
+# pip install torch-scatter
+# pip install torch-sparse
+# pip install torch-geometric
 
-pip install torch-cluster
-pip install torch-spline-conv
+# pip install torch-cluster
+# pip install torch-spline-conv
