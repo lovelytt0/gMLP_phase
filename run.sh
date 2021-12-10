@@ -42,3 +42,4 @@ conda deactivate
 
 # Add project path
 #export PYTHONPATH=$PYTHONPATH:/path/you/want/to/add
+export PYTHONPATH=$PYTHONPATH:/home2/saeed/gMLP_phase
