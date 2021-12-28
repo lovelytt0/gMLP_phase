@@ -46,3 +46,6 @@ export PYTHONPATH=$PYTHONPATH:/home2/saeed/gMLP_phase
 
 
 git clone --recurse-submodules https://github.com/seisbench/seisbench
+git clone --recurse-submodules https://github.com/SCEDC/pystp.git
+cd pystp
+pip install .
