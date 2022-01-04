@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import h5py
 import time
-from gMLPhase.EqT_utils import DataGenerator, data_reader
+from gMLPhase.EqT_utils import DataGenerator
 from torch import nn
 from gMLPhase.gMLP_torch import gMLPmodel
 

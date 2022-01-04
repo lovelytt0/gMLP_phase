@@ -229,18 +229,72 @@ def deconv_block(n_in, n_out, k, stride,padding, output_padding, activation, dro
         return nn.ConvTranspose1d(n_in, n_out, k, stride=stride, padding=padding, output_padding=output_padding
         )
     
+def encoder(activation, dropout):
+
+    return nn.Sequential(
+        conv_block(3, 8, 3, 1, 1, activation, dropout = dropout),
+        nn.BatchNorm1d(8),
+        conv_block(8, 8, 3, 2, 1, activation),
+        conv_block(8, 8, 3, 1, 1, activation, dropout = dropout),
+        nn.BatchNorm1d(8),
+        conv_block(8, 16, 3, 2, 1, activation),
+        conv_block(16, 16, 3, 1, 1, activation, dropout = dropout),
+        nn.BatchNorm1d(16),
+        conv_block(16, 16, 3, 2, 1, activation),
+        conv_block(16, 16, 3, 1, 1, activation, dropout = dropout),
+        nn.BatchNorm1d(16),
+        conv_block(16, 32, 3, 2, 1, activation),
+        conv_block(32, 32, 3, 1, 1, activation, dropout = dropout),
+        nn.BatchNorm1d(32),
+        conv_block(32, 32, 3, 2, 1, activation),
+        conv_block(32, 32, 3, 1, 1, activation, dropout = dropout),
+        nn.BatchNorm1d(32),    
+        conv_block(32, 64, 3, 2, 1, activation),
+        conv_block(64, 64, 3, 1, 1, activation, dropout = dropout),
+        nn.BatchNorm1d(64),
+        conv_block(64, 64, 3, 2, 1, activation),
+        conv_block(64, 64, 3, 1, 1, activation, dropout = dropout),
+        nn.BatchNorm1d(64)
+        )
     
+    
+def decoder(activation, dropout):
+
+    return nn.Sequential(
+        deconv_block(64, 64, 3, 2, padding = 1, output_padding=1, activation=activation),
+        nn.BatchNorm1d(64),
+        conv_block(64,64,3,1,1,activation, dropout = dropout),
+        deconv_block(64, 32, 3, 2, padding = 1, output_padding=1, activation=activation),
+        nn.BatchNorm1d(32),
+        conv_block(32,32,3,1,1,activation, dropout = dropout),
+        deconv_block(32, 32, 3, 2, padding = 1, output_padding=0, activation=activation),
+        nn.BatchNorm1d(32),
+        conv_block(32,32,3,1,1,activation, dropout = dropout),
+        deconv_block(32, 16, 3, 2, padding = 1, output_padding=1, activation=activation),
+        nn.BatchNorm1d(16),
+        conv_block(16,16,3,1,1,activation, dropout = dropout),
+        deconv_block(16, 16, 3, 2, padding = 1, output_padding=1, activation=activation),
+        nn.BatchNorm1d(16),
+        conv_block(16,16,3,1,1,activation, dropout = dropout),
+        deconv_block(16, 8, 3, 2, padding = 1, output_padding=1, activation=activation),
+        nn.BatchNorm1d(8),
+        conv_block(8,8,3,1,1,activation, dropout = dropout),
+        deconv_block(8, 8, 3, 2, padding = 1, output_padding=1, activation=activation),
+        nn.BatchNorm1d(8),
+        conv_block(8,8,3,1,1,activation, dropout = dropout),
+        nn.Conv1d(8, 1, 3, stride=1, padding=1)
+        
+    )
 class gMLPmodel(pl.LightningModule):
     def __init__(
         self,
         *,
-        dim =32 ,
-        depth = 7 ,
-        seq_len = 188,
+        dim =64 ,
+        depth = 3 ,
+        seq_len = 47,
         heads = 1,
-        ff_mult = 4,
+        ff_mult = 2,
         attn_dim = None,
-        prob_survival = 1.,
         causal = False,
         circulant_matrix = True,
         shift_tokens = 0,
@@ -248,7 +302,7 @@ class gMLPmodel(pl.LightningModule):
         dropout=0.1,
         activation= nn.GELU() ,
         loss_types = F.binary_cross_entropy_with_logits,
-        loss_weights = [0.05,0.4,0.55]
+        loss_weights = [0.4,0.6]
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -256,120 +310,52 @@ class gMLPmodel(pl.LightningModule):
         assert (dim % heads) == 0, 'dimension must be divisible by number of heads'
         self.dim = dim
         dim_ff = dim * ff_mult
-        self.prob_survival = prob_survival
                 
-        self.conv0 =  conv_block(3, 8, 3, 1, 1, activation, dropout = dropout)
-        self.batch_norm0 = nn.BatchNorm1d(8)
-
-        self.conv1_0 = conv_block(8, 8, 3, 2, 1, activation)
-        self.conv1_1 = conv_block(8, 8, 3, 1, 1, activation, dropout = dropout)
-        self.batch_norm1 = nn.BatchNorm1d(8)
-        
-        self.conv2_0 = conv_block(8, 16, 3, 2, 1, activation)
-        self.conv2_1 = conv_block(16, 16, 3, 1, 1, activation, dropout = dropout)
-        self.batch_norm2 = nn.BatchNorm1d(16)
-
-        self.conv3_0 = conv_block(16, 16, 3, 2, 1, activation)
-        self.conv3_1 = conv_block(16, 16, 3, 1, 1, activation, dropout = dropout)
-        self.batch_norm3 = nn.BatchNorm1d(16)
-
-        self.conv4_0 = conv_block(16, 32, 3, 2, 1, activation)
-        self.conv4_1 = conv_block(32, 32, 3, 1, 1, activation, dropout = dropout)
-        self.batch_norm4 = nn.BatchNorm1d(32)
-
-        
-        self.conv5_0 = conv_block(32, 32, 3, 2, 1, activation)
-        self.conv5_1 = conv_block(32, 32, 3, 1, 1, activation, dropout = dropout)
-        self.batch_norm5 = nn.BatchNorm1d(32)
-        
-#         token_shifts = tuple(range(0 if causal else -shift_tokens, shift_tokens + 1))
-#         self.gMLPlayers = nn.ModuleList([Residual(PreNorm(dim, PreShiftTokens(token_shifts, gMLPBlock(dim = dim, heads = heads, dim_ff = dim_ff, seq_len = seq_len, attn_dim = attn_dim, causal = causal, act = act, circulant_matrix = circulant_matrix)))) for i in range(depth)])
+    
+        self.encoder = encoder(activation=activation,dropout = dropout)
 
         self.gMLPlayers = nn.ModuleList([Residual(PreNorm(dim, gMLPBlock(dim = dim, heads = heads, dim_ff = dim_ff, seq_len = seq_len, attn_dim = attn_dim, causal = causal, act = act, circulant_matrix = circulant_matrix))) for i in range(depth)])
+     
         
-        
-        self.deconv0_0 = deconv_block(32, 32, 3, 2, padding = 1, output_padding=0, activation=activation)
-        self.deconv1_0 = deconv_block(32, 16, 3, 2, padding = 1, output_padding=1, activation=activation)
-        self.deconv2_0 = deconv_block(16, 16, 3, 2, padding = 1, output_padding=1, activation=activation)
-        self.deconv3_0 = deconv_block(16, 8, 3, 2, padding = 1, output_padding=1, activation=activation)
-        self.deconv4_0 = deconv_block(8, 8, 3, 2, padding = 1, output_padding=1, activation=activation)
-        
-        self.deconv0_1 = conv_block(64,32,3,1,1,activation, dropout = dropout)
-        self.deconv1_1 = conv_block(32,16,3,1,1,activation, dropout = dropout)
-        self.deconv2_1 = conv_block(32,16,3,1,1,activation, dropout = dropout)
-        self.deconv3_1 = conv_block(16,8,3,1,1,activation, dropout = dropout)
-        self.deconv4_1 = conv_block(16,8,3,1,1,activation, dropout = dropout)
-        self.deconv4_2 = nn.Conv1d(8, 3, 3, stride=1, padding=1)
-        
-        self.batch_norm6 = nn.BatchNorm1d(32)
-        self.batch_norm7 = nn.BatchNorm1d(16)
-        self.batch_norm8 = nn.BatchNorm1d(16)
-        self.batch_norm9 = nn.BatchNorm1d(8)
-        self.batch_norm10 = nn.BatchNorm1d(8)
-        
+        self.decoderP = decoder(activation=activation,dropout = dropout)
+        self.decoderS = decoder(activation=activation,dropout = dropout)
+
         self.criterion =  loss_types #F.binary_cross_entropy_with_logits
         
         
     def forward(self, x):
         
         x = np.squeeze(x)
-        x0 = self.conv0(x)
-        x0 = self.batch_norm0(x0)
-        x1 = self.conv1_1(self.batch_norm1(self.conv1_0(x0)))
-        x2 = self.conv2_1(self.batch_norm2(self.conv2_0(x1)))
-        x3 = self.conv3_1(self.batch_norm3(self.conv3_0(x2)))
-        x4 = self.conv4_1(self.batch_norm4(self.conv4_0(x3)))
-        x5 = self.conv5_1(self.batch_norm5(self.conv5_0(x4)))
+        x = self.encoder(x)
 
-        x5.transpose_(1, 2)
-#         gMLPlayers=self.gMLPlayers if not self.training else dropout_layers(self.gMLPlayers, self.prob_survival)
-        x5 = nn.Sequential(*self.gMLPlayers)(x5)
-        x5.transpose_(1, 2)
+        x.transpose_(1, 2)
+        x = nn.Sequential(*self.gMLPlayers)(x)
+        x.transpose_(1, 2)
  
-        x6 = torch.cat((self.batch_norm6(self.deconv0_0(x5)), x4), 1)
-        x6 = self.deconv0_1(x6)
-  
-        x7 = torch.cat((self.batch_norm7(self.deconv1_0(x6)), x3), 1)
-        x7 = self.deconv1_1(x7)
+        x_P = self.decoderP(x)
+        x_S = self.decoderS(x)
         
-        x8 = torch.cat((self.batch_norm8(self.deconv2_0(x7)), x2), 1)
-        x8 = self.deconv2_1(x8)
-        
-        x9 = torch.cat((self.batch_norm9(self.deconv3_0(x8)), x1), 1)
-        x9 = self.deconv3_1(x9)
-        
-        x10 = torch.cat((self.batch_norm10(self.deconv4_0(x9)), x0), 1)
-        x10 = self.deconv4_1(x10)
-        x10 = self.deconv4_2(x10)
-
-        return x10
+        return torch.cat((x_P,x_S), 1 )
 
     def training_step(self, batch, batch_idx):
-        # training_step defined the train loop.
-        # It is independent of forward
+        
         x, y = batch
         y = np.squeeze(y)
         y_hat = self.forward(x)
-#         y_hat2 = y_hat.view(-1,1)
-#         y2 = y.view(-1,1)
-#         loss = self.criterion(y_hat2, y2)
-#         print(x.shape,y.shape,y_hat.shape)
-        y_hatD = y_hat[:,0,:].reshape(-1,1)
-        yD = y[:,0,:].reshape(-1,1)
-        lossD = self.criterion(y_hatD, yD)
+        y_hatP = y_hat[:,0,:].reshape(-1,1)
+        yP = y[:,0,:].reshape(-1,1)
+        lossP = self.criterion(y_hatP, yP)* self.loss_weights[0]
 
-        y_hatP = y_hat[:,1,:].reshape(-1,1)
-        yP = y[:,1,:].reshape(-1,1)
-        lossP = self.criterion(y_hatP, yP)
-
-        y_hatS = y_hat[:,2,:].reshape(-1,1)
-        yS = y[:,2,:].reshape(-1,1)
-        lossS = self.criterion(y_hatS, yS)
+        y_hatS = y_hat[:,1,:].reshape(-1,1)
+        yS = y[:,1,:].reshape(-1,1)
+        lossS = self.criterion(y_hatS, yS)* self.loss_weights[1]
         
-        loss = self.loss_weights[0]*lossD+self.loss_weights[1]*lossP+self.loss_weights[2]*lossS
-#         print(loss,lossD,lossP, lossS, (lossD+lossP+lossS)/3)
-        # Logging to TensorBoard by default
+        loss = lossP+lossS
+
+        
         self.log("train_loss", loss, on_epoch=True, prog_bar=True)
+        self.log("train_lossP", lossP, on_epoch=True, prog_bar=True)
+        self.log("train_lossS", lossS, on_epoch=True, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -378,32 +364,26 @@ class gMLPmodel(pl.LightningModule):
 
         y_hat = self.forward(x)
         
-#         y_hat2 = y_hat.view(-1,1)
-#         y2 = y.view(-1,1)
-#         loss = self.criterion(y_hat2, y2)
-        
-        y_hatD = y_hat[:,0,:].reshape(-1,1)
-        yD = y[:,0,:].reshape(-1,1)
-        lossD = self.criterion(y_hatD, yD)
+        y_hatP = y_hat[:,0,:].reshape(-1,1)
+        yP = y[:,0,:].reshape(-1,1)
+        lossP = self.criterion(y_hatP, yP)* self.loss_weights[0]
 
-        y_hatP = y_hat[:,1,:].reshape(-1,1)
-        yP = y[:,1,:].reshape(-1,1)
-        lossP = self.criterion(y_hatP, yP)
-
-        y_hatS = y_hat[:,2,:].reshape(-1,1)
-        yS = y[:,2,:].reshape(-1,1)
-        lossS = self.criterion(y_hatS, yS)
+        y_hatS = y_hat[:,1,:].reshape(-1,1)
+        yS = y[:,1,:].reshape(-1,1)
+        lossS = self.criterion(y_hatS, yS)* self.loss_weights[1]
         
-        loss = self.loss_weights[0]*lossD+self.loss_weights[1]*lossP+self.loss_weights[2]*lossS
-    
-    
+        loss = lossP+lossS
+        
         self.log("val_loss", loss, on_epoch=True, prog_bar=True)
+        self.log("val_lossP", lossP, on_epoch=True, prog_bar=True)
+        self.log("val_lossS", lossS, on_epoch=True, prog_bar=True)
 
         return {'val_loss': loss}
     
     
+    
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-4)
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
         return {
                 "optimizer": optimizer,
@@ -414,6 +394,4 @@ class gMLPmodel(pl.LightningModule):
                        },
         
         }
-    
-    
     

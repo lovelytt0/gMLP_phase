@@ -36,7 +36,7 @@ import torch
 import pytorch_lightning as pl
 from torch.utils import mkldnn as mkldnn_utils
 from torch.utils.data import DataLoader, Dataset
-from gMLPhase.EqT_utils import DataGenerator,data_reader
+from gMLPhase.EqT_utils import DataGenerator
 
 
 def _normalize( data, mode = 'max'):  
@@ -279,9 +279,37 @@ def tester(input_hdf5=None,
 #         pred_SS_mean = pred_SS_mean.reshape(pred_SS_mean.shape[0], pred_SS_mean.shape[1]) 
         pred_DD_std = np.zeros((pred_DD_mean.shape))
         pred_PP_std = np.zeros((pred_PP_mean.shape))
-        pred_SS_std = np.zeros((pred_SS_mean.shape))           
+        pred_SS_std = np.zeros((pred_SS_mean.shape))     
+        
+        
+        
+        if plt_n < args['number_of_plots']:  
+            x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14 = model.forward_full(X)
+            def process_a(x):
+                x = x.detach().numpy()
+                x_new =x-np.mean(x,axis=2, keepdims=True)
+                x_new =x_new/np.max(abs(x_new),axis=2, keepdims=True)
+                return x_new
+                
+            x0 = process_a(x0)
+            x1 = process_a(x1)
+            x2 = process_a(x2)
+            x3 = process_a(x3)
+            x4 = process_a(x4)
+            x5 = process_a(x5)
+            x6 = process_a(x6)
+            x7 = process_a(x7)
+            x8 = process_a(x8)
+            x9 = process_a(x9)
 
+            x10 = process_a(x10)
+            x11 = process_a(x11)
 
+            x12 = process_a(x12)
+
+            x13 = process_a(x13)
+            
+            
         for ts in range(pred_DD_mean.shape[0]): 
             evi =  new_list[ts] 
             dataset = test_set[evi]
@@ -298,7 +326,7 @@ def tester(input_hdf5=None,
             matches, pick_errors, yh3=picker(args, pred_DD_mean[ts], pred_PP_mean[ts], pred_SS_mean[ts],
                                                    pred_DD_std[ts], pred_PP_std[ts], pred_SS_std[ts], spt, sst) 
 
-            _output_writter_test(args,dataset, evi, test_writer, csvTst, matches, pick_errors)
+            _output_writter_test(args, dataset, evi, test_writer, csvTst, matches, pick_errors)
 
             if plt_n < args['number_of_plots']:  
 
@@ -313,7 +341,47 @@ def tester(input_hdf5=None,
                             pred_PP_std[ts], 
                             pred_SS_std[ts],
                             matches)
+                
+                data = np.array(dataset)
+    
+                plt.figure(figsize=(12,15))
+                plt.subplot(8,1,1)
+                plt.plot(data[:, 0], 'r')
+                plt.plot(data[:, 1], 'b')
+                plt.plot(data[:, 2], 'k')
+                plt.xlim([0,6000])
+                plt.subplot(8,1,2)
+                plt.title('x1')
+                plt.pcolormesh(x1[ts],cmap = 'hot' )
+                plt.subplot(8,1,3)
+                plt.pcolormesh(x3[ts],cmap = 'hot' )
+                plt.title('x3')
+                
+                plt.subplot(8,1,4)
+                plt.pcolormesh(x5[ts],cmap = 'hot' )
+                plt.title('x5')
 
+                plt.subplot(8,1,5)
+
+                plt.pcolormesh(x7[ts],cmap = 'hot' )
+                plt.title('x7')
+
+                plt.subplot(8,1,6)
+                plt.pcolormesh(x9[ts],cmap = 'hot' )
+                plt.title('x9')
+
+                plt.subplot(8,1,7)
+                plt.pcolormesh(x11[ts],cmap = 'hot' )
+                plt.title('x11')
+
+                
+                plt.subplot(8,1,8)
+                plt.pcolormesh(x13[ts],cmap = 'hot' )
+                plt.title('x13')
+
+                plt.tight_layout()                
+
+                plt.savefig(os.path.join(save_figs, 'Visual_'+str(evi.split('/')[-1])+'.png')) 
             plt_n += 1
     end_training = time.time()  
     delta = end_training - start_training
